@@ -1,2 +1,2 @@
 # DatabaseProject
-Project in JDBC realized for the exam of Database
+Project in JDBC realized for the exam of Databases
