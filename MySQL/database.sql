@@ -1,0 +1,177 @@
+CREATE DATABASE databaseFIGC;
+
+USE databaseFIGC;
+
+CREATE TABLE Stadio (
+  Nome VARCHAR(50) PRIMARY KEY,
+  Citta VARCHAR(50) NOT NULL,
+  Capienza INT NOT NULL
+);
+
+CREATE TABLE Squadra (
+  Codice VARCHAR(3) PRIMARY KEY,
+  Nome VARCHAR(50) NOT NULL,
+  Citta VARCHAR(50) NOT NULL,
+  ValoreRosa DECIMAL(12,2) NOT NULL,
+  Vittorie INT NOT NULL,
+  Pareggi INT NOT NULL,
+  Sconfitte INT NOT NULL,
+  Stadio VARCHAR(50) NOT NULL,
+  FOREIGN KEY (Stadio) REFERENCES Stadio(Nome)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT
+);
+
+CREATE TABLE Allenatore (
+  CF VARCHAR(16) PRIMARY KEY,
+  Nome VARCHAR(50) NOT NULL,
+  Cognome VARCHAR(50) NOT NULL,
+  DataNascita DATE NOT NULL,
+  Nazionalita VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Calciatore (
+  CF VARCHAR(16) PRIMARY KEY,
+  Nome VARCHAR(50) NOT NULL,
+  Cognome VARCHAR(50) NOT NULL,
+  DataNascita DATE NOT NULL,
+  Nazionalita VARCHAR(50) NOT NULL,
+  Ruolo VARCHAR(50) NOT NULL,
+  Valore DECIMAL(11,2) NOT NULL,
+  Costo DECIMAL(11,2) NOT NULL
+);
+
+CREATE TABLE Palmares (
+  NomeTrofeo VARCHAR(50) NOT NULL,
+  Stagione VARCHAR(9) NOT NULL,
+	Squadra VARCHAR(3) NOT NULL,
+  PRIMARY KEY (NomeTrofeo, Stagione),
+	FOREIGN KEY (Squadra) REFERENCES Squadra(Codice)
+		ON UPDATE CASCADE
+		ON DELETE RESTRICT
+);
+
+CREATE TABLE Arbitro (
+  CF VARCHAR(16) PRIMARY KEY,
+  Nome VARCHAR(50) NOT NULL,
+  Cognome VARCHAR(50) NOT NULL,
+  DataNascita DATE NOT NULL,
+  Nazionalita VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Partita (
+  ID INT PRIMARY KEY,
+  DataPartita DATE NOT NULL,
+  Avversario VARCHAR(50) NOT NULL,
+  RetiS1 INT NOT NULL,
+  RetiS2 INT NOT NULL,
+  Arbitro VARCHAR(16) NOT NULL,
+  Squadra VARCHAR(3) NOT NULL,
+  FOREIGN KEY (Arbitro) REFERENCES Arbitro(CF) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (Squadra) REFERENCES Squadra(Codice)
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE Classificata (
+  ID VARCHAR(3) PRIMARY KEY,
+  Nome VARCHAR(50) NOT NULL,
+  Stagione VARCHAR(9) NOT NULL
+);
+
+CREATE TABLE Torneo (
+  ID VARCHAR(3) PRIMARY KEY,
+  Nome VARCHAR(50) NOT NULL,
+  Stagione VARCHAR(9) NOT NULL
+);
+
+CREATE TABLE ContrattoCalciatore (
+  SquadraCodice VARCHAR(3) NOT NULL,
+  CalciatoreCF VARCHAR(16) NOT NULL,
+  DataScadenza DATE NOT NULL,
+  Retribuzione DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (SquadraCodice, CalciatoreCF),
+  FOREIGN KEY (SquadraCodice) REFERENCES Squadra(Codice)
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (CalciatoreCF) REFERENCES Calciatore(CF) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE ContrattoAllenatore (
+  SquadraCodice VARCHAR(3) NOT NULL,
+  AllenatoreCF VARCHAR(16) NOT NULL,
+  DataScadenza DATE NOT NULL,
+  Retribuzione DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (SquadraCodice, AllenatoreCF),
+  FOREIGN KEY (SquadraCodice) REFERENCES Squadra(Codice)
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (AllenatoreCF) REFERENCES Allenatore(CF)
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE PertinenzaClassificata (
+  PartitaID INT NOT NULL,
+  ClassificataID VARCHAR(3) NOT NULL,
+  PRIMARY KEY (PartitaID, ClassificataID),
+  FOREIGN KEY (PartitaID) REFERENCES Partita(ID) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (ClassificataID) REFERENCES Classificata(ID) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE PertinenzaTorneo (
+  PartitaID INT NOT NULL,
+  TorneoID VARCHAR(3) NOT NULL,
+  PRIMARY KEY (PartitaID, TorneoID),
+  FOREIGN KEY (PartitaID) REFERENCES Partita(ID) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (TorneoID) REFERENCES Torneo(ID) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE PartecipazioneClassificata (
+  SquadraCodice VARCHAR(3) NOT NULL,
+  ClassificataID VARCHAR(3) NOT NULL,
+  Posizione INT NOT NULL,
+  PRIMARY KEY (SquadraCodice, ClassificataID),
+  FOREIGN KEY (SquadraCodice) REFERENCES Squadra(Codice) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (ClassificataID) REFERENCES Classificata(ID) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
+
+DELIMITER //
+CREATE TRIGGER check_posizione
+BEFORE INSERT ON PartecipazioneClassificata
+FOR EACH ROW
+BEGIN
+    IF NEW.Posizione < 1 OR NEW.Posizione > 20 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La posizione deve essere compresa tra 1 e 20';
+    END IF;
+END //
+DELIMITER ;
+
+CREATE TABLE PartecipazioneTorneo (
+  SquadraCodice VARCHAR(3) NOT NULL,
+  TorneoID VARCHAR(3) NOT NULL,
+  Fase VARCHAR(20) NOT NULL,
+  PRIMARY KEY (SquadraCodice, TorneoID),
+  FOREIGN KEY (SquadraCodice) REFERENCES Squadra(Codice) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT,
+  FOREIGN KEY (TorneoID) REFERENCES Torneo(ID) 
+	ON UPDATE CASCADE 
+    ON DELETE RESTRICT
+);
